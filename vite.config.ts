@@ -4,7 +4,7 @@ export default defineConfig({
   build: {
     lib: {
       entry: "./src/elna-chat-widget.ts",
-      name: "@elna/chat-widget",
+      name: "@elna/chat-widget1",
       formats: ["es", "cjs"],
     },
     rollupOptions: {
