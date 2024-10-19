@@ -9,7 +9,7 @@ export { idlFactory } from "./wizard_details.did.js";
  * process.env.CANISTER_ID_<CANISTER_NAME_UPPERCASE>
  * beginning in dfx 0.15.0
  */
-export const canisterId = import.meta.env.VITE_CANISTER_ID_WIZARD_DETAILS;
+export const canisterId = "gichg-2iaaa-aaaah-adtia-cai";
 
 export const createActor = (canisterId, options = {}) => {
   const agent = new HttpAgent({ host: "https://icp0.io" });

@@ -380,12 +380,14 @@ export class ElnaChat extends LitElement {
   async sendChat(agentId: string, text: string) {
     this.isResponseLoading = true;
     const embeddings = await getTextEmbedding(text);
+    console.log(embeddings)
     const res = await elna_RAG_backend.chat(
       agentId,
       text,
       embeddings,
       crypto.randomUUID()
     );
+
     if (isErr(res)) {
       this.isResponseLoading = false;
       this.messages = [

@@ -6,8 +6,8 @@ import type { IDL } from '@dfinity/candid';
 export interface Body { 'response' : string }
 export interface Envs {
   'external_service_url' : string,
-  'wizard_details_canister_id' : string,
-  'vectordb_canister_id' : string,
+  'wizard_details_canister_id' : "gichg-2iaaa-aaaah-adtia-cai",
+  'vectordb_canister_id' : "bpsjh-6yaaa-aaaah-adyjq-cai",
 }
 export type Error = { 'CantParseHost' : null } |
   { 'BodyNonSerializable' : null } |
