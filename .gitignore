@@ -12,7 +12,7 @@ node_modules
 .env
 
 # Build files
-dist
+
 dist-ssr
 types
 

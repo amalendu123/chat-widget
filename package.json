@@ -1,5 +1,5 @@
 {
-  "name": "@elna-ai/chat-widget",
+  "name": "@amalendu123/chat-widget",
   "version": "2.0.3",
   "type": "module",
   "description": "Embeddable third-party widget library for Elna Agents",
@@ -41,5 +41,13 @@
     "prettier": "^3.3.2",
     "typescript": "^5.2.2",
     "vite": "^5.3.1"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/amalendu123/chat-widget.git"
+  },
+  "bugs": {
+    "url": "https://github.com/amalendu123/chat-widget/issues"
+  },
+  "homepage": "https://github.com/amalendu123/chat-widget#readme"
 }
