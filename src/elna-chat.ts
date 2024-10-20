@@ -11,9 +11,12 @@ import { WizardDetails } from "./declerations/wizard_details/wizard_details.did"
 import { handleAutoResizeTextBox, isErr } from "./utils";
 import { Message } from "./types";
 import "./elna-chat-bubble";
-
+import axios from "axios";
 @customElement("elna-chat")
 export class ElnaChat extends LitElement {
+  @state()
+  protected inputDate: Date = new Date(); 
+
   @property()
   headerBackgroundColor = "";
 
@@ -213,6 +216,7 @@ export class ElnaChat extends LitElement {
       }
     }
   `;
+  
 
   protected render() {
     return html` <div class="chat-wrapper">
@@ -294,6 +298,12 @@ export class ElnaChat extends LitElement {
         <span> might slip up; double-check crucial info.</span>
       </div>
       <div class="chat-footer__input-wrapper">
+      <input
+        type="date"
+        class="chat-footer__input-wrapper__date"
+        .value=${this.inputDate ? this.inputDate.toISOString().split('T')[0] : ''}
+        @input=${this.setDate}
+      />
         <textarea
           placeholder="Write a reply"
           class="chat-footer__input-wrapper__input"
@@ -349,6 +359,10 @@ export class ElnaChat extends LitElement {
       this.handleSubmit();
     }
   }
+  setDate(e: Event) {
+    const inputElement = e.target as HTMLInputElement;
+    this.inputDate = new Date(inputElement.value);;
+  }
 
   async handleSubmit() {
     this.messages = [
@@ -356,9 +370,10 @@ export class ElnaChat extends LitElement {
       {
         user: { name: "User", isBot: false },
         message: this.inputMessage.trim(),
+        date: this.inputDate,
       },
     ];
-    this.sendChat(this.agentId, this.inputMessage.trim());
+    this.sendChat(this.agentId, this.inputMessage.trim(),this.inputDate);
   }
 
   async getAgent(agentId: string) {
@@ -368,6 +383,7 @@ export class ElnaChat extends LitElement {
       const initialMessage = {
         user: { name: wizard[0].name, isBot: true },
         message: wizard[0].greeting,
+        date:this.inputDate
       };
       this.messages = [...this.messages, initialMessage];
       this.error = "";
@@ -376,14 +392,38 @@ export class ElnaChat extends LitElement {
     }
     this.isLoading = false;
   }
-
-  async sendChat(agentId: string, text: string) {
+ 
+   fetchFromPinata = async (hash: string) => {
+    const url = `https://gateway.pinata.cloud/ipfs/${hash}`;
+  
+    try {
+      const response = await axios.get(url);
+      return response.data; // Return the retrieved data
+    } catch (error) {
+      console.error("Error fetching from Pinata:", error);
+      return null; // Return null or handle errors as needed
+    }
+  };
+  async sendChat(agentId: string, text: string,date:Date) {
+    console.log(date);
+  
+    // Example hash (You might want to define this more dynamically)
+    const specificHash = "QmRDDSqJHL3ZgLugFoKiAs33gLMfsYfCHPVAsfHK29RCmu";
+  
+    // Fetching data from Pinata using the specific hash
+    const dataFromHash = await this.fetchFromPinata(specificHash);
+    if (dataFromHash) {
+      console.log("Data retrieved from hash:", dataFromHash);
+      // You can now use this data in your messages or anywhere else
+    } else {
+      console.log("No data retrieved or error occurred.");
+    }
     this.isResponseLoading = true;
     const embeddings = await getTextEmbedding(text);
     console.log(embeddings)
     const res = await elna_RAG_backend.chat(
       agentId,
-      text,
+      text+"This is what i did on that day"+dataFromHash,
       embeddings,
       crypto.randomUUID()
     );
@@ -395,6 +435,7 @@ export class ElnaChat extends LitElement {
         {
           user: { isBot: true, name: this.wizard!.name },
           message: "Something went wrong please send the message again",
+          date:date
         },
       ];
       return;
@@ -405,6 +446,7 @@ export class ElnaChat extends LitElement {
       {
         user: { isBot: true, name: this.wizard!.name },
         message: res.Ok.body.response,
+        date:date
       },
     ];
     this.inputMessage = "";
