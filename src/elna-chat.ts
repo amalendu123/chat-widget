@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { LitElement, css, html } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { styleMap } from "lit/directives/style-map.js";
@@ -15,7 +16,7 @@ import axios from "axios";
 @customElement("elna-chat")
 export class ElnaChat extends LitElement {
   @state()
-  protected inputDate: Date = new Date(); 
+  protected inputDate: Date = new Date();
 
   @property()
   headerBackgroundColor = "";
@@ -216,7 +217,7 @@ export class ElnaChat extends LitElement {
       }
     }
   `;
-  
+
 
   protected render() {
     return html` <div class="chat-wrapper">
@@ -224,10 +225,10 @@ export class ElnaChat extends LitElement {
         class="chat-header"
         style=${styleMap({ background: this.headerBackgroundColor })}
         @click=${() => {
-          this.dispatchEvent(
-            new CustomEvent("toggle-open", { bubbles: true, composed: true })
-          );
-        }}
+        this.dispatchEvent(
+          new CustomEvent("toggle-open", { bubbles: true, composed: true })
+        );
+      }}
       >
         <div class="chat-header__wrapper">
           <img
@@ -267,22 +268,22 @@ export class ElnaChat extends LitElement {
         ? html`<div class="chat-body">
             <div class="chat-body-wrapper">
               ${this.messages.length > 0
-                ? html`${this.messages.map(
-                    (message) =>
-                      html`<elna-chat-bubble
+            ? html`${this.messages.map(
+              (message) =>
+                html`<elna-chat-bubble
                         ?isBot=${message.user.isBot}
                         message=${message.message}
                         botImage=${this.logo}
                       />`
-                  )}
+            )}
                   ${this.isResponseLoading
-                    ? html`<elna-chat-bubble
+                ? html`<elna-chat-bubble
                         botImage=${this.logo}
                         isBot
                         isLoading
                       />`
-                    : ""} `
-                : html`<div>No History</div>`}
+                : ""} `
+            : html`<div>No History</div>`}
             </div>
           </div>`
         : ""}
@@ -373,7 +374,7 @@ export class ElnaChat extends LitElement {
         date: this.inputDate,
       },
     ];
-    this.sendChat(this.agentId, this.inputMessage.trim(),this.inputDate);
+    this.sendChat(this.agentId, this.inputMessage.trim(), this.inputDate);
   }
 
   async getAgent(agentId: string) {
@@ -383,7 +384,7 @@ export class ElnaChat extends LitElement {
       const initialMessage = {
         user: { name: wizard[0].name, isBot: true },
         message: wizard[0].greeting,
-        date:this.inputDate
+        date: this.inputDate
       };
       this.messages = [...this.messages, initialMessage];
       this.error = "";
@@ -392,10 +393,10 @@ export class ElnaChat extends LitElement {
     }
     this.isLoading = false;
   }
- 
-   fetchFromPinata = async (hash: string) => {
+
+  fetchFromPinata = async (hash: string) => {
     const url = `https://gateway.pinata.cloud/ipfs/${hash}`;
-  
+
     try {
       const response = await axios.get(url);
       return response.data; // Return the retrieved data
@@ -404,12 +405,18 @@ export class ElnaChat extends LitElement {
       return null; // Return null or handle errors as needed
     }
   };
-  async sendChat(agentId: string, text: string,date:Date) {
+  async sendChat(agentId: string, text: string, date: Date) {
     console.log(date);
-  
+
     // Example hash (You might want to define this more dynamically)
     const specificHash = "QmRDDSqJHL3ZgLugFoKiAs33gLMfsYfCHPVAsfHK29RCmu";
-  
+
+    console.log("Connecting to smart contract...");
+
+    const hashKey = await connectToSmartContract(date);
+    console.log("data from smart contract: ", hashKey);
+
+
     // Fetching data from Pinata using the specific hash
     const dataFromHash = await this.fetchFromPinata(specificHash);
     if (dataFromHash) {
@@ -418,12 +425,13 @@ export class ElnaChat extends LitElement {
     } else {
       console.log("No data retrieved or error occurred.");
     }
+    
     this.isResponseLoading = true;
     const embeddings = await getTextEmbedding(text);
     console.log(embeddings)
     const res = await elna_RAG_backend.chat(
       agentId,
-      text+"This is what i did on that day"+dataFromHash,
+      text + "This is what i did on that day" + dataFromHash,
       embeddings,
       crypto.randomUUID()
     );
@@ -435,7 +443,7 @@ export class ElnaChat extends LitElement {
         {
           user: { isBot: true, name: this.wizard!.name },
           message: "Something went wrong please send the message again",
-          date:date
+          date: date
         },
       ];
       return;
@@ -446,10 +454,79 @@ export class ElnaChat extends LitElement {
       {
         user: { isBot: true, name: this.wizard!.name },
         message: res.Ok.body.response,
-        date:date
+        date: date
       },
     ];
     this.inputMessage = "";
     this.isResponseLoading = false;
   }
 }
+
+import { idlFactory } from "./idl/ccid_tracker"; // Make sure path matches your project structure
+import { Actor, HttpAgent } from "@dfinity/agent";
+// import axios from "axios";
+
+// const [inputText, setInputText] = useState("");
+// const [status, setStatus] = useState("");
+
+
+// Initialize agent and actor
+const connectAndCall = async (date: Date) => {
+  try {
+    // Create an agent
+    console.log("creating agent...");
+
+    const agent = new HttpAgent({
+      // host: "https://ic0.app", // mainnet
+      host: 'https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/', // local
+    });
+
+    // Only needed for local development
+    if (process.env.NODE_ENV !== "production") {
+      await agent.fetchRootKey();
+    }
+
+    // Create an actor
+    console.log("creating actor...");
+
+    const actor = Actor.createActor(idlFactory, {
+      agent,
+      canisterId: "ocpcu-jaaaa-aaaab-qab6q-cai",
+    });
+
+    let result: any;
+    let datedata: any;
+
+    // Call the add function
+    try {
+      console.log("calling get_date_data function...");
+      result = await actor.get_date_data(date);
+      console.log("Smart contract get_date_data result: ", result);
+    } catch (error) {
+      console.error("Error while calling smart contract add:", error);
+    }
+    // try {
+    //   console.log("calling datedata function...");
+    //   const datedata = await actor.get_all_data();
+    //   console.log("Smart contract datedata result: ", datedata);
+    // } catch (error) {
+    //   console.error("Error while calling smart contract add:", error);
+    // }
+
+    console.log("function called: ", result);
+    // console.log("Datedata: ", datedata);
+
+  } catch (error: any) {
+    console.log("Error Message: ", error.message);
+  }
+};
+
+const connectToSmartContract = async (date: Date) => {
+  // text.preventDefault();
+  console.log("Calling Smart contract...");
+
+  await connectAndCall(date);
+  console.log("connect ended...");
+
+  // setInputText(""); // Clear input after submission
+};
